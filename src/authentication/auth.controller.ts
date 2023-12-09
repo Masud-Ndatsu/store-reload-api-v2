@@ -15,6 +15,15 @@ export class AuthController implements Controller {
      private initializeRoutes() {
           this.router.post(`${this.path}/register`, this.register);
           this.router.post(`${this.path}/login`, this.login);
+          this.router.post(`${this.path}/reset-password`, this.resetPassword);
+          this.router.post(
+               `${this.path}/reset-password/verify-code`,
+               this.resetPasswordVerifyCode
+          );
+          this.router.post(
+               `${this.path}/reset-password/change`,
+               this.resetPasswordChange
+          );
      }
 
      private register = async (
@@ -44,7 +53,65 @@ export class AuthController implements Controller {
      ) => {
           try {
                const userReq = req.body;
+               const { cookie, shop, token } = await authService.login(userReq);
+
+               res.setHeader("Set-Cookie", [cookie]);
+               return res.status(200).json({
+                    status: true,
+                    data: {
+                         ...shop,
+                         token,
+                    },
+               });
           } catch (error: any) {
+               next(error);
+          }
+     };
+
+     private resetPassword = async (
+          req: Request,
+          res: Response,
+          next: NextFunction
+     ) => {
+          try {
+               const { email } = req.body;
+               await authService.resetPassword({
+                    email,
+               });
+               return res.status(200).json({
+                    status: true,
+                    data: null,
+               });
+          } catch (error) {
+               next(error);
+          }
+     };
+
+     private resetPasswordVerifyCode = async (
+          req: Request,
+          res: Response,
+          next: NextFunction
+     ) => {
+          try {
+               const { shop } = await authService.resetPasswordVerifyCode(
+                    req.body
+               );
+               return res.status(200).json({
+                    status: true,
+                    data: shop,
+               });
+          } catch (error) {
+               next(error);
+          }
+     };
+     private resetPasswordChange = async (
+          req: Request,
+          res: Response,
+          next: NextFunction
+     ) => {
+          try {
+               const {} = authService.resetPasswordChange(req.body);
+          } catch (error) {
                next(error);
           }
      };
