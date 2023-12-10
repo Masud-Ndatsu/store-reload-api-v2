@@ -93,12 +93,12 @@ export class AuthController implements Controller {
           next: NextFunction
      ) => {
           try {
-               const { shop } = await authService.resetPasswordVerifyCode(
+               const { user } = await authService.resetPasswordVerifyCode(
                     req.body
                );
                return res.status(200).json({
                     status: true,
-                    data: shop,
+                    data: user,
                });
           } catch (error) {
                next(error);
@@ -110,7 +110,11 @@ export class AuthController implements Controller {
           next: NextFunction
      ) => {
           try {
-               const {} = authService.resetPasswordChange(req.body);
+               await authService.resetPasswordChange(req.body);
+               return res.status(200).json({
+                    status: true,
+                    data: null,
+               });
           } catch (error) {
                next(error);
           }

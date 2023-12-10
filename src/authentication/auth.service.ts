@@ -1,48 +1,51 @@
-import { IShop, IUser } from "../users/user.interface";
+import { IUser } from "../users/user.interface";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { IToken, ITokenData } from "./auth.interface";
-import shopModel from "../shops/shop.model";
 import userModel from "../users/user.model";
 import { genAuthCode } from "../utils/generate-auth-code";
 import { sendMail } from "../utils/send-mail";
 import { authCodeExpiration } from "../utils/auth-code-expiration";
+import {
+     InvalidCredentials,
+     UserAlreadyExists,
+     UserNotFound,
+} from "../exceptions";
 
 export class AuthService {
-     public shops = shopModel;
      public users = userModel;
 
-     public async register(userReq: IShop): Promise<any> {
+     public async register(userReq: IUser): Promise<any> {
           const { shop_name, password } = userReq;
-          const shopExits = await this.shops.findOne({ shop_name });
+          const userExits = await this.users.findOne({ shop_name });
 
-          if (shopExits) {
-               throw new Error("Shop name already exists");
+          if (userExits) {
+               throw new UserAlreadyExists();
           }
           const salt = await bcrypt.genSalt(10);
           const hashPwd = await bcrypt.hash(password, salt);
 
-          const shop = await this.shops.create({
+          const user = await this.users.create({
                ...userReq,
                password: hashPwd,
           });
 
-          const tokenData = this.createToken(shop);
+          const tokenData = this.createToken(user);
           const cookie = this.createCookie(tokenData);
 
           await this.users.create({
-               shop: shop._id,
+               user: user._id,
           });
 
           return {
-               shop,
+               user,
                cookie,
                token: tokenData.token,
           };
      }
-     public async login(userReq: any) {
+     public async login(userReq: IUser) {
           const { shop_name, password } = userReq;
-          const [shopExits] = await this.shops.aggregate([
+          const [userExits] = await this.users.aggregate([
                {
                     $match: {
                          $expr: {
@@ -59,22 +62,22 @@ export class AuthService {
                },
           ]);
 
-          if (!shopExits) {
-               throw new Error("Shop does not exists");
+          if (!userExits) {
+               throw new UserNotFound();
           }
 
-          const vp = await bcrypt.compare(password, shopExits.password);
+          const vp = await bcrypt.compare(password, userExits.password);
 
           if (!vp) {
-               throw new Error("Incorrect password");
+               throw new InvalidCredentials();
           }
 
-          const tokenData = this.createToken(shopExits);
+          const tokenData = this.createToken(userExits);
           const cookie = this.createCookie(tokenData);
 
           return {
                cookie,
-               shop: shopExits,
+               shop: userExits,
                token: tokenData.token,
           };
      }
@@ -84,19 +87,19 @@ export class AuthService {
           const userExits = await this.users.findOne({ email });
 
           if (!userExits) {
-               throw new Error("User doesn't exist");
+               throw new UserNotFound();
           }
 
           const code = genAuthCode(6);
 
           await sendMail({
-               email: email,
+               email: userExits.email,
                subject: "Password Recovery/Reset",
                message: `Dear User you have recetly requested to change your password, provide this code to proceed: ${code}.`,
           });
           const expires = authCodeExpiration();
 
-          await this.shops.findOneAndUpdate(
+          await this.users.findOneAndUpdate(
                {
                     _id: userExits.shop,
                },
@@ -107,26 +110,23 @@ export class AuthService {
           );
           return;
      };
-     public resetPasswordVerifyCode = async (userReq: any) => {
+     public resetPasswordVerifyCode = async (userReq: {
+          code: string;
+          email: string;
+     }) => {
           const { code, email } = userReq;
 
-          const user = await this.users.findOne({ email });
-
-          if (!user) {
-               throw new Error("");
-          }
-
-          const shop = await this.shops.findOne({
+          const user = await this.users.findOne({
+               email,
                auth_code: code,
                auth_code_expires: { $gt: new Date() },
-               _id: user._id,
           });
 
-          if (!shop) {
-               throw new Error("");
+          if (!user) {
+               throw new UserNotFound();
           }
           return {
-               shop,
+               user,
           };
      };
      public resetPasswordChange = async (userReq: any) => {
@@ -136,10 +136,10 @@ export class AuthService {
                throw new Error("Invalid password");
           }
 
-          const shopExits = await this.shops.findOne({ email });
+          const userExits = await this.users.findOne({ email });
 
-          if (!shopExits) {
-               throw new Error("Shops not found");
+          if (!userExits) {
+               throw new UserNotFound();
           }
 
           const salt = await bcrypt.genSalt(10);
@@ -147,7 +147,7 @@ export class AuthService {
 
           await this.users.findOneAndUpdate(
                {
-                    shop: shopExits._id,
+                    _id: userExits._id,
                },
                {
                     password: hashPwd,
@@ -156,12 +156,12 @@ export class AuthService {
           return;
      };
 
-     public createToken(shop: any): ITokenData {
+     public createToken(user: any): ITokenData {
           const expiresTime = 60 * 5;
           const secret = process.env.JWT_SECRET!;
 
           const payload: IToken = {
-               _id: shop._id,
+               _id: user._id,
           };
           return {
                expiresIn: expiresTime,
