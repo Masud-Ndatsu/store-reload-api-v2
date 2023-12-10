@@ -9,10 +9,6 @@ export interface IUser {
      shop: string;
      verified: boolean;
      user_type: string;
-}
-
-export interface IShop {
-     _id: string;
      shop_name: string;
      password: string;
      LGA: string;
