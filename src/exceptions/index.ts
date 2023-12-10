@@ -1,4 +1,4 @@
-class HttpException extends Error {
+export class HttpException extends Error {
      status: number;
      override message: string;
 
@@ -42,5 +42,11 @@ export class UnAuthorized extends HttpException {
 export class UserNotFound extends HttpException {
      constructor() {
           super(404, "User not found");
+     }
+}
+
+export class UserCodeExpired extends HttpException {
+     constructor() {
+          super(403, "User otp code expired");
      }
 }

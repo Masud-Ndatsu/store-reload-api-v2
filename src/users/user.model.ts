@@ -19,8 +19,12 @@ const schema = new Schema<IUser>({
      },
      verified: {
           type: Boolean,
+          default: false,
      },
      user_type: {
+          type: String,
+     },
+     NIN: {
           type: String,
      },
      shop_name: {

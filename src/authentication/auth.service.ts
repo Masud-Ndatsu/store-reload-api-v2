@@ -33,10 +33,6 @@ export class AuthService {
           const tokenData = this.createToken(user);
           const cookie = this.createCookie(tokenData);
 
-          await this.users.create({
-               user: user._id,
-          });
-
           return {
                user,
                cookie,
@@ -74,7 +70,7 @@ export class AuthService {
 
           const tokenData = this.createToken(userExits);
           const cookie = this.createCookie(tokenData);
-
+          delete userExits.password;
           return {
                cookie,
                shop: userExits,
@@ -157,7 +153,7 @@ export class AuthService {
      };
 
      public createToken(user: any): ITokenData {
-          const expiresTime = 60 * 5;
+          const expiresTime = 60 * 60;
           const secret = process.env.JWT_SECRET!;
 
           const payload: IToken = {

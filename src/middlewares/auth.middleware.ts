@@ -10,21 +10,28 @@ export const authUser = async (
      next: NextFunction
 ): Promise<void> => {
      const cookies = req.cookies;
-     if ((cookies && cookies.Authorization) || req.headers?.authorization) {
-          const token =
-               req?.headers?.authorization?.split(" ")[1] ||
-               (cookies && cookies.Authorization);
-          const secret = process.env.JWT_SECRET!;
+     try {
+          if (
+               (cookies && cookies.Authorization) ||
+               req.headers?.authorization
+          ) {
+               const token =
+                    req?.headers?.authorization?.split(" ")[1] ||
+                    (cookies && cookies.Authorization);
+               const secret = process.env.JWT_SECRET!;
 
-          const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
-          const user = await userModel.findOne({ _id: decoded._id });
-          if (!user) {
-               next(new AuthTokenInvalid());
+               const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
+               const user = await userModel.findOne({ _id: decoded._id });
+               if (!user) {
+                    throw new AuthTokenInvalid();
+               } else {
+                    req.user = user;
+                    next();
+               }
           } else {
-               req.user = user;
-               next();
+               throw new AuthTokenRequired();
           }
-     } else {
-          next(new AuthTokenRequired());
+     } catch (error) {
+          next(error);
      }
 };

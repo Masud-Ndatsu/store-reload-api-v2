@@ -4,6 +4,8 @@ import { IRequestWithUser } from "../authentication/auth.interface";
 import { authUser } from "../middlewares/auth.middleware";
 import userModel from "./user.model";
 import { UserNotFound } from "../exceptions";
+import { UserService } from "./user.service";
+const userService = new UserService();
 
 export class UserController implements Controller {
      public path: string = "/users";
@@ -34,6 +36,7 @@ export class UserController implements Controller {
                return res.status(200).json({
                     status: true,
                     data: user,
+                    messsage: "Request successful",
                });
           } catch (error) {
                next(error);
@@ -54,6 +57,7 @@ export class UserController implements Controller {
                return res.status(200).json({
                     status: true,
                     data: user,
+                    messsage: "Request successful",
                });
           } catch (error) {
                next(error);
@@ -61,33 +65,59 @@ export class UserController implements Controller {
      };
 
      private setup = async (
-          req: Request,
+          req: IRequestWithUser,
           res: Response,
           next: NextFunction
      ) => {
           try {
+               const user = req.user;
+               const userReq = req.body;
+               userReq._id = user?._id;
+
+               await userService.accountSetup(userReq);
+               return res.status(200).json({
+                    status: true,
+                    data: null,
+                    messsage: "Request successful",
+               });
           } catch (error) {
                next(error);
           }
      };
 
      private update = async (
-          req: Request,
+          req: IRequestWithUser,
           res: Response,
           next: NextFunction
      ) => {
           try {
+               const userReq = req.body;
+               await userService.update(userReq);
+               return res.status(200).json({
+                    status: true,
+                    data: null,
+                    messsage: "Request successful",
+               });
           } catch (error) {
                next(error);
           }
      };
 
      private verify = async (
-          req: Request,
+          req: IRequestWithUser,
           res: Response,
           next: NextFunction
      ) => {
           try {
+               if (req.user) {
+                    req.body._id = req.user._id;
+               }
+               await userService.verify(req.body);
+               return res.status(200).json({
+                    status: true,
+                    data: null,
+                    messsage: "Request successful",
+               });
           } catch (error) {
                next(error);
           }
