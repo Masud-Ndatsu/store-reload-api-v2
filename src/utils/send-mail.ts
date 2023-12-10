@@ -1,4 +1,4 @@
-const nodemailer: any = {};
+import nodemailer from "nodemailer";
 
 export const sendMail = async (options: {
      email: string;
