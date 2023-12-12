@@ -2,7 +2,9 @@ import { Router, Request, Response, NextFunction } from "express";
 import { Controller } from "../interfaces/controller.interface";
 import { CategoryService } from "./category.service";
 import { validateRequest } from "../middlewares/validation.middleware";
-import { CreateCategorySchema, SearchParamSchema } from "./category.dto";
+import { CreateCategorySchema } from "./category.dto";
+import { authUser } from "../middlewares/auth.middleware";
+import { restrictedTo } from "../middlewares/permission.middleware";
 const categoryService = new CategoryService();
 
 export class CategoryController implements Controller {
@@ -15,18 +17,22 @@ export class CategoryController implements Controller {
      private initializeRoutes() {
           this.router.post(
                `${this.path}/`,
+               authUser,
+               restrictedTo(["admin"]),
                validateRequest(CreateCategorySchema),
                this.create
           );
-          this.router.get(`${this.path}`, this.list);
+          this.router.get(`${this.path}`, authUser, this.list);
           this.router.put(
                `${this.path}/:id`,
-               // validateRequest(SearchParamSchema),
+               authUser,
+               restrictedTo(["admin"]),
                this.update
           );
           this.router.delete(
                `${this.path}/:id`,
-               // validateRequest(SearchParamSchema),
+               authUser,
+               restrictedTo(["admin"]),
                this.remove
           );
      }
