@@ -1,25 +1,18 @@
-import { NextFunction, Request, RequestHandler, Response } from "express";
-import { validate, ValidationError } from "class-validator";
-import { plainToInstance } from "class-transformer";
-import { HttpException } from "../exceptions";
-export const validationMiddleware = (
-     type: any,
-     skipMissingProperties: boolean = false
-): RequestHandler => {
-     return (req: Request, _: Response, next: NextFunction) => {
-          validate(plainToInstance(type, req.body), {
-               skipMissingProperties,
-          }).then((errors: ValidationError[]) => {
-               if (errors.length > 0) {
-                    const message = errors
-                         .map((error: ValidationError) =>
-                              Object.values(error.constraints ?? {})
-                         )
-                         .join(", ");
-                    next(new HttpException(400, message));
-               } else {
-                    next();
-               }
-          });
+import { NextFunction, Request, Response } from "express";
+
+export const validateRequest =
+     (schema: any) => (req: Request, res: Response, next: NextFunction) => {
+          const { error } = schema.validate(
+               req?.body ? req.body : req?.params ? req.params : req.query
+          );
+
+          if (error) {
+               return res.status(400).json({
+                    status: false,
+                    data: null,
+                    message: error.details[0].message,
+               });
+          }
+
+          return next();
      };
-};

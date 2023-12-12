@@ -73,7 +73,7 @@ export class AuthService {
           delete userExits.password;
           return {
                cookie,
-               shop: userExits,
+               user: userExits,
                token: tokenData.token,
           };
      }
@@ -87,23 +87,25 @@ export class AuthService {
           }
 
           const code = genAuthCode(6);
-
-          await sendMail({
-               email: userExits.email,
-               subject: "Password Recovery/Reset",
-               message: `Dear User you have recetly requested to change your password, provide this code to proceed: ${code}.`,
-          });
           const expires = authCodeExpiration();
 
-          await this.users.findOneAndUpdate(
-               {
-                    _id: userExits.shop,
-               },
-               {
-                    auth_code: code,
-                    auth_code_expires: expires,
-               }
-          );
+          await Promise.all([
+               sendMail({
+                    email: userExits.email,
+                    subject: "Password Recovery/Reset",
+                    message: `Dear User you have recetly requested to change your password, provide this code to proceed: ${code}.`,
+               }),
+
+               this.users.findOneAndUpdate(
+                    {
+                         _id: userExits._id,
+                    },
+                    {
+                         auth_code: code,
+                         auth_code_expires: expires,
+                    }
+               ),
+          ]);
           return;
      };
      public resetPasswordVerifyCode = async (userReq: {
@@ -126,10 +128,10 @@ export class AuthService {
           };
      };
      public resetPasswordChange = async (userReq: any) => {
-          const { email, password, confim_password } = userReq;
+          const { email, password, confirm_password } = userReq;
 
-          if (password !== confim_password) {
-               throw new Error("Invalid password");
+          if (password !== confirm_password) {
+               throw new InvalidCredentials();
           }
 
           const userExits = await this.users.findOne({ email });

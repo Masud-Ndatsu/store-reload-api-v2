@@ -1,10 +1,13 @@
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, Response, NextFunction } from "express";
 import { Controller } from "../interfaces/controller.interface";
 import { IRequestWithUser } from "../authentication/auth.interface";
 import { authUser } from "../middlewares/auth.middleware";
 import userModel from "./user.model";
 import { UserNotFound } from "../exceptions";
 import { UserService } from "./user.service";
+import { restrictedTo } from "../middlewares/permission.middleware";
+import { validateRequest } from "../middlewares/validation.middleware";
+import { UpdateUserSchema, VerifyUserSchema } from "./user.dto";
 const userService = new UserService();
 
 export class UserController implements Controller {
@@ -17,13 +20,38 @@ export class UserController implements Controller {
      }
 
      private initializeRoutes() {
-          this.router.use(authUser);
-          this.router.get(`${this.path}/me`, this.me);
-          this.router.get(`${this.path}/:id`, this.read);
-          this.router.post(`${this.path}/account-setup`, this.setup);
-          this.router.put(`${this.path}/me`, authUser, this.update);
-          this.router.post(`${this.path}/verify-me`, this.verify);
-          this.router.post(`${this.path}/messages`, this.message);
+          this.router.get(
+               `${this.path}/me`,
+               authUser,
+               restrictedTo(["user"]),
+               this.me
+          );
+          this.router.get(
+               `${this.path}/:id`,
+               authUser,
+               restrictedTo(["admin", "user"]),
+               this.read
+          );
+          this.router.post(
+               `${this.path}/account-setup`,
+               authUser,
+               restrictedTo(["user"]),
+               validateRequest(UpdateUserSchema),
+               this.setup
+          );
+          this.router.put(
+               `${this.path}/me`,
+               authUser,
+               restrictedTo(["admin"]),
+               this.update
+          );
+          this.router.post(
+               `${this.path}/verify-me`,
+               authUser,
+               restrictedTo(["user"]),
+               validateRequest(VerifyUserSchema),
+               this.verify
+          );
      }
 
      private me = async (
@@ -118,17 +146,6 @@ export class UserController implements Controller {
                     data: null,
                     messsage: "Request successful",
                });
-          } catch (error) {
-               next(error);
-          }
-     };
-
-     private message = async (
-          req: Request,
-          res: Response,
-          next: NextFunction
-     ) => {
-          try {
           } catch (error) {
                next(error);
           }

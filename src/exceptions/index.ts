@@ -50,3 +50,21 @@ export class UserCodeExpired extends HttpException {
           super(403, "User otp code expired");
      }
 }
+
+export class ProductNotFound extends HttpException {
+     constructor() {
+          super(404, "Product not found");
+     }
+}
+
+export class CategoryNotFound extends HttpException {
+     constructor() {
+          super(404, "Product category not found");
+     }
+}
+
+export class CategoryAlreadyExists extends HttpException {
+     constructor() {
+          super(409, "Product category already exists");
+     }
+}

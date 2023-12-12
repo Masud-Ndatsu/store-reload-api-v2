@@ -6,7 +6,6 @@ export interface IUser {
      gender: string;
      avatar: string;
      phone_number: string;
-     shop: string;
      verified: boolean;
      user_type: string;
      shop_name: string;

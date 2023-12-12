@@ -1,3 +1,4 @@
+import axios from "axios";
 import { UserCodeExpired } from "../exceptions";
 import { authCodeExpiration } from "../utils/auth-code-expiration";
 import { genAuthCode } from "../utils/generate-auth-code";
@@ -39,14 +40,19 @@ export class UserService {
                email: user?.email,
           };
 
-          await this.createWallet(apiReq);
+          await this.createWallet();
           return;
      };
 
-     private createWallet = async (userReq: any) => {
-          console.log({
-               userReq,
-          });
+     public createWallet = async () => {
+          // const res = await axios.post(
+          //      process.env.MONNIFY_BASE_URL!,
+          //      {},
+          //      {
+          //           headers: {},
+          //      }
+          // );
+          // console.log({});
      };
 
      public async update(userReq: IUser) {}

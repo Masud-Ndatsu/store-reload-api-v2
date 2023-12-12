@@ -1,6 +1,7 @@
 import express, { Express } from "express";
 import { Controller } from "./interfaces/controller.interface";
 import mongoose from "mongoose";
+// import base64 from "base64";
 import cors from "cors";
 import "dotenv/config";
 import { errorMiddleware } from "./middlewares/error.middleware";
@@ -25,6 +26,13 @@ export class App {
      }
 
      private initializeErrorHandler() {
+          this.app.use("*", (req: express.Request, res: express.Response) => {
+               return res.status(404).json({
+                    status: false,
+                    data: null,
+                    message: "Api resource not found",
+               });
+          });
           this.app.use(errorMiddleware);
      }
      private connectToDatabase() {
@@ -58,3 +66,7 @@ export class App {
           });
      }
 }
+
+// const buffer = base64("MK_TEST_XNSFYPAFXG:TZ9WUZTLHZF0DXV4VU4UXXP2Z1QRQNM5");
+// const base64 = buffer.toString("base64");
+// console.log("access_token", base64);
