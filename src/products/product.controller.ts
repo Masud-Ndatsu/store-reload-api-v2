@@ -4,12 +4,9 @@ import { Controller } from "../interfaces/controller.interface";
 import { ProductService } from "./product.service";
 import { authUser } from "../middlewares/auth.middleware";
 import { validateRequest } from "../middlewares/validation.middleware";
-import {
-     CreateProductSchema,
-     SearchParamSchema,
-     SearchQuerySchema,
-} from "./product.dto";
+import { CreateProductSchema, SearchQuerySchema } from "./product.dto";
 import { restrictedTo } from "../middlewares/permission.middleware";
+import { HttpException } from "../exceptions";
 const productService = new ProductService();
 
 export class ProductController implements Controller {
@@ -32,33 +29,24 @@ export class ProductController implements Controller {
           this.router.get(
                `${this.path}/category`,
                authUser,
-               validateRequest(SearchQuerySchema),
                this.getProductByCategory
           );
           this.router.get(
                `${this.path}/search`,
                authUser,
-               validateRequest(SearchQuerySchema),
                this.getProductBySearch
           );
-          this.router.get(
-               `${this.path}/:id`,
-               authUser,
-               validateRequest(SearchParamSchema),
-               this.read
-          );
+          this.router.get(`${this.path}/:id`, authUser, this.read);
           this.router.put(
                `${this.path}/:id`,
                authUser,
-               restrictedTo(["admin"]),
-               validateRequest(SearchParamSchema),
+               restrictedTo(["admin", "user"]),
                this.update
           );
           this.router.delete(
                `${this.path}/:id`,
                authUser,
-               restrictedTo(["admin"]),
-               validateRequest(SearchParamSchema),
+               restrictedTo(["admin", "user"]),
                this.remove
           );
      }
@@ -133,6 +121,11 @@ export class ProductController implements Controller {
                const page = Number(req.query.page) || 1;
                const limit = Number(req.query.limit) || 10;
                const category = req.query.q as string;
+               const { error } = SearchQuerySchema.validate(req.query);
+
+               if (error) {
+                    throw new HttpException(400, error.message);
+               }
 
                const { data } = await productService.getByCategory({
                     category,
@@ -160,6 +153,12 @@ export class ProductController implements Controller {
                const limit = Number(req.query.limit) || 10;
                const search_text = req.query.q as string;
 
+               const { error } = SearchQuerySchema.validate(req.query);
+
+               if (error) {
+                    throw new HttpException(400, error.message);
+               }
+
                const { data } = await productService.search({
                     search_text,
                     page,
@@ -183,6 +182,7 @@ export class ProductController implements Controller {
      ) => {
           try {
                const { id } = req.params;
+
                if (req.files) {
                     req.body.images = [];
                }
@@ -204,6 +204,7 @@ export class ProductController implements Controller {
      ) => {
           try {
                const { id } = req.params;
+
                if (req.files) {
                     req.body.images = [];
                }

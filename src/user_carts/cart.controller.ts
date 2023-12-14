@@ -1,49 +1,33 @@
-import { Router, Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import { Controller } from "../interfaces/controller.interface";
-import { CategoryService } from "./category.service";
-import { validateRequest } from "../middlewares/validation.middleware";
-import { CreateCategorySchema } from "./category.dto";
+import { CartService } from "./cart.service";
+import { IRequestWithUser } from "../authentication/auth.interface";
 import { authUser } from "../middlewares/auth.middleware";
-import { restrictedTo } from "../middlewares/permission.middleware";
-const categoryService = new CategoryService();
+const cartService = new CartService();
 
-export class CategoryController implements Controller {
-     public path: string = "/categories";
+export class CartController implements Controller {
+     public path: string = "/carts";
      public router: Router = Router();
+
      constructor() {
           this.initializeRoutes();
      }
 
      private initializeRoutes() {
-          this.router.post(
-               `${this.path}/`,
-               authUser,
-               restrictedTo(["admin", "user"]),
-               validateRequest(CreateCategorySchema),
-               this.create
-          );
+          this.router.post(`${this.path}`, authUser, this.add);
           this.router.get(`${this.path}`, authUser, this.list);
-          this.router.put(
-               `${this.path}/:id`,
-               authUser,
-               restrictedTo(["admin"]),
-               this.update
-          );
-          this.router.delete(
-               `${this.path}/:id`,
-               authUser,
-               restrictedTo(["admin"]),
-               this.remove
-          );
+          this.router.put(`${this.path}/:id`, authUser, this.update);
+          this.router.delete(`${this.path}/:id`, authUser, this.remove);
      }
 
-     private create = async (
-          req: Request,
+     private add = async (
+          req: IRequestWithUser,
           res: Response,
           next: NextFunction
      ) => {
           try {
-               await categoryService.create(req.body);
+               const id = req.user ? req.user._id.toString() : "";
+               await cartService.create(req.body, id);
                return res.status(201).json({
                     status: true,
                     data: null,
@@ -53,10 +37,17 @@ export class CategoryController implements Controller {
                next(error);
           }
      };
-
-     private list = async (req: Request, res: Response, next: NextFunction) => {
+     private list = async (
+          req: IRequestWithUser,
+          res: Response,
+          next: NextFunction
+     ) => {
           try {
-               const { data } = await categoryService.list();
+               const id = req.user ? req.user._id.toString() : "";
+               console.log({
+                    id,
+               });
+               const { data } = await cartService.list(id);
                return res.status(200).json({
                     status: true,
                     data,
@@ -66,14 +57,17 @@ export class CategoryController implements Controller {
                next(error);
           }
      };
+
      private update = async (
-          req: Request,
+          req: IRequestWithUser,
           res: Response,
           next: NextFunction
      ) => {
           try {
                const { id } = req.params;
-               await categoryService.update(req.body, id);
+               const userId = req.user ? req.user._id : "";
+               req.body._id = id;
+               await cartService.update(req.body, userId);
                return res.status(200).json({
                     status: true,
                     data: null,
@@ -83,6 +77,7 @@ export class CategoryController implements Controller {
                next(error);
           }
      };
+
      private remove = async (
           req: Request,
           res: Response,
@@ -90,9 +85,7 @@ export class CategoryController implements Controller {
      ) => {
           try {
                const { id } = req.params;
-               console.log(req.params);
-
-               await categoryService.remove(id);
+               await cartService.remove(id);
                return res.status(200).json({
                     status: true,
                     data: null,

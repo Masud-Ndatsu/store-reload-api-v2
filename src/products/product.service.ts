@@ -1,4 +1,8 @@
-import { CategoryNotFound, ProductNotFound } from "../exceptions";
+import {
+     CategoryNotFound,
+     ProductNotFound,
+     ProductTypeNotFound,
+} from "../exceptions";
 import { Category } from "../product_categories/category.model";
 import { IProduct } from "./product.interface";
 import Product from "./product.model";
@@ -73,6 +77,11 @@ export class ProductService {
                                    },
                               },
                               {
+                                   description: {
+                                        $regex: new RegExp(search_text, "i"),
+                                   },
+                              },
+                              {
                                    "category.name": {
                                         $regex: new RegExp(search_text, "i"),
                                    },
@@ -106,7 +115,7 @@ export class ProductService {
      }): Promise<any> => {
           const { page, limit, type } = metadata;
 
-          const products = await Product.aggregate([
+          const products = await this.products.aggregate([
                {
                     $lookup: {
                          from: "categories",
@@ -116,18 +125,20 @@ export class ProductService {
                     },
                },
                {
-                    $match: {
-                         $expr: { $eq: ["$type", type] },
+                    $project: {
+                         name: 1,
+                         type: 1,
+                         images: 1,
+                         price: 1,
+                         category: { $arrayElemAt: ["$category", 0] },
                     },
                },
                {
-                    $project: {
-                         name: 1,
-                         images: 1,
-                         price: 1,
-                         category: 1,
+                    $match: {
+                         type: type,
                     },
                },
+
                {
                     $skip: (page - 1) * limit,
                },
@@ -148,19 +159,30 @@ export class ProductService {
                     },
                },
           ]);
+
+          console.log({
+               products: JSON.stringify(
+                    products.map((product) => product.category.name)
+               ),
+          });
+
+          const categories = [
+               ...new Set(productCategories.map((category) => category.name)),
+          ];
+
+          if (!productCategories[0]) {
+               throw new ProductTypeNotFound();
+          }
           const productsAndCategory = products.map((_, index) => ({
-               category: productCategories[index],
-               href: `/products?category=${productCategories[index]}`,
+               category: categories[index],
+               href: `/products?category=${categories[index]}`,
                data: products.filter(
-                    (product) =>
-                         product.category[0]?.name === productCategories[index]
+                    (product) => product.category.name === categories[index]
                ),
           }));
-          const filteredProducts = productsAndCategory.filter(
-               (product) => product.category.name !== undefined
-          );
+
           return {
-               data: filteredProducts,
+               data: productsAndCategory,
           };
      };
 
@@ -173,7 +195,7 @@ export class ProductService {
           page: number;
           limit: number;
      }): Promise<any> => {
-          const products = await Product.aggregate([
+          const products = await this.products.aggregate([
                {
                     $lookup: {
                          from: "categories",
@@ -183,15 +205,16 @@ export class ProductService {
                     },
                },
                {
-                    $match: {
-                         $expr: { $eq: ["$category", category] },
-                    },
-               },
-               {
                     $project: {
                          name: 1,
                          images: 1,
                          price: 1,
+                         category: { $arrayElemAt: ["$category", 0] },
+                    },
+               },
+               {
+                    $match: {
+                         $expr: { $eq: ["$category.name", category] },
                     },
                },
                {
@@ -228,6 +251,15 @@ export class ProductService {
           }
 
           await this.products.findByIdAndDelete(id);
+
+          const products = await this.products.find({
+               category: product.category,
+          });
+
+          if (products.length === 0) {
+               await this.categories.findByIdAndDelete(product.category);
+          }
+
           return;
      };
 }

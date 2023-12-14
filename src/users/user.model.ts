@@ -4,18 +4,22 @@ import { IUser } from "./user.interface";
 const schema = new Schema<IUser>({
      first_name: {
           type: String,
+          trim: true,
      },
      last_name: {
           type: String,
+          trim: true,
      },
      avatar: {
           type: String,
      },
      email: {
           type: String,
+          trim: true,
      },
      phone_number: {
           type: String,
+          trim: true,
      },
      verified: {
           type: Boolean,
@@ -26,6 +30,7 @@ const schema = new Schema<IUser>({
      },
      NIN: {
           type: String,
+          trim: true,
      },
      shop_name: {
           type: String,
@@ -37,9 +42,11 @@ const schema = new Schema<IUser>({
      },
      address: {
           type: String,
+          trim: true,
      },
      LGA: {
           type: String,
+          trim: true,
      },
      auth_code: {
           type: String,

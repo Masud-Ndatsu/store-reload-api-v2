@@ -1,14 +1,9 @@
-export interface ICart {
-     _id: string;
-     product: string;
-     quantity: number;
-     user: string;
-}
+import { Types } from "mongoose";
 
 export interface IOrder {
-     products: string[];
+     products: Types.ObjectId[];
      price: number;
-     user: string;
+     user: Types.ObjectId;
      shipping_address: string;
      reference: string;
 }

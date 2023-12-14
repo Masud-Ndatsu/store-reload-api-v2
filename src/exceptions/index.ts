@@ -57,6 +57,12 @@ export class ProductNotFound extends HttpException {
      }
 }
 
+export class ProductTypeNotFound extends HttpException {
+     constructor() {
+          super(404, "Product type not found");
+     }
+}
+
 export class CategoryNotFound extends HttpException {
      constructor() {
           super(404, "Product category not found");
@@ -66,5 +72,11 @@ export class CategoryNotFound extends HttpException {
 export class CategoryAlreadyExists extends HttpException {
      constructor() {
           super(409, "Product category already exists");
+     }
+}
+
+export class CartItemNotFound extends HttpException {
+     constructor() {
+          super(404, "Cart item  not found");
      }
 }

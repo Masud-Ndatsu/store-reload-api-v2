@@ -5,8 +5,7 @@ const schema = new Schema<IOrder>(
      {
           products: [
                {
-                    type: String,
-                    ref: "order_items",
+                    type: Schema.Types.ObjectId,
                     required: true,
                },
           ],
@@ -15,8 +14,7 @@ const schema = new Schema<IOrder>(
                default: 0,
           },
           user: {
-               type: String,
-               ref: "users",
+               type: Schema.Types.ObjectId,
                required: true,
           },
           shipping_address: {

@@ -11,9 +11,8 @@ const schema = new Schema<IProduct>({
           required: true,
      },
      category: {
-          type: String,
+          type: Schema.Types.ObjectId,
           required: true,
-          ref: "categories",
      },
      type: {
           type: String,
