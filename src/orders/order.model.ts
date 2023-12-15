@@ -6,7 +6,7 @@ const schema = new Schema<IOrder>(
           products: [
                {
                     type: Schema.Types.ObjectId,
-                    required: true,
+                    required: [true, "product must be a mongoose object ID"],
                },
           ],
           price: {
@@ -15,7 +15,7 @@ const schema = new Schema<IOrder>(
           },
           user: {
                type: Schema.Types.ObjectId,
-               required: true,
+               required: [true, "user must be a mongoose object ID"],
           },
           shipping_address: {
                type: String,

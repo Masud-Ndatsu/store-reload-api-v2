@@ -44,7 +44,11 @@ export class UserNotFound extends HttpException {
           super(404, "User not found");
      }
 }
-
+export class UserNotVerified extends HttpException {
+     constructor() {
+          super(404, "User not verified");
+     }
+}
 export class UserCodeExpired extends HttpException {
      constructor() {
           super(403, "User otp code expired");

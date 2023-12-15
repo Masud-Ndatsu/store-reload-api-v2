@@ -1,39 +1,25 @@
-import { HttpException } from "../exceptions";
-import Product from "../products/product.model";
 import { IOrder } from "./order.interface";
 import { OrderModel } from "./order.model";
+import userModel from "../users/user.model";
+import { UserNotVerified } from "../exceptions";
 
 export class OrderService {
      private orders = OrderModel;
-     private products = Product;
+     private users = userModel;
      public async create(orderReq: IOrder, userId: string) {
           const { products, price, reference, shipping_address } = orderReq;
-          const orders = await this.products
-               .find({ _id: { $in: products } })
-               .lean();
 
-          if (products.length === orders.length) {
-               throw new HttpException(400, "Some products are not found");
-          }
-          for (let i = 0; i < products.length; i++) {
-               if (
-                    !orders
-                         .map((product) => product._id.toString())
-                         .includes(products[i].toString())
-               ) {
-                    throw new HttpException(
-                         400,
-                         "A product is missing from your orders " +
-                              products[i].toString()
-                    );
-               }
+          const user = await this.users.findById(userId);
+
+          if (user && !user.verified) {
+               throw new UserNotVerified();
           }
           const newOrder = await this.orders.create({
-               ...orderReq,
+               products,
                price,
                shipping_address,
                reference,
-               user: userId,
+               user: user?._id,
           });
 
           return {
@@ -44,8 +30,95 @@ export class OrderService {
      public async list() {
           const orders = await this.orders.aggregate([
                {
+                    $lookup: {
+                         from: "carts",
+                         localField: "products",
+                         foreignField: "_id",
+                         as: "products",
+                         pipeline: [
+                              {
+                                   $lookup: {
+                                        from: "products",
+                                        localField: "product",
+                                        foreignField: "_id",
+                                        as: "product",
+                                   },
+                              },
+                              {
+                                   $project: {
+                                        quantity: 1,
+                                        product: {
+                                             $arrayElemAt: ["$product", 0],
+                                        },
+                                   },
+                              },
+                         ],
+                    },
+               },
+
+               {
                     $match: {},
                },
+               {
+                    $project: {
+                         products: 1,
+                         price: 1,
+                         shipping_address: 1,
+                         user: 1,
+                    },
+               },
           ]);
+
+          return {
+               data: orders,
+          };
      }
+     public getById = async (id: string) => {
+          const order = await this.orders.aggregate([
+               {
+                    $lookup: {
+                         from: "carts",
+                         localField: "products",
+                         foreignField: "_id",
+                         as: "products",
+                         pipeline: [
+                              {
+                                   $lookup: {
+                                        from: "products",
+                                        localField: "product",
+                                        foreignField: "_id",
+                                        as: "product",
+                                   },
+                              },
+                              {
+                                   $project: {
+                                        quantity: 1,
+                                        product: {
+                                             $arrayElemAt: ["$product", 0],
+                                        },
+                                   },
+                              },
+                         ],
+                    },
+               },
+
+               {
+                    $match: {
+                         // _id: id,
+                    },
+               },
+               {
+                    $project: {
+                         products: 1,
+                         price: 1,
+                         shipping_address: 1,
+                         user: 1,
+                    },
+               },
+          ]);
+
+          return {
+               data: order,
+          };
+     };
 }

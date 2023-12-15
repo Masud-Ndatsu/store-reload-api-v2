@@ -181,8 +181,12 @@ export class ProductService {
                ),
           }));
 
+          const filteredProducts = productsAndCategory.filter((product) => {
+               return product.category !== undefined;
+          });
+
           return {
-               data: productsAndCategory,
+               data: filteredProducts,
           };
      };
 
